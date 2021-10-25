@@ -18,7 +18,6 @@ package androidx.test.internal.events.client;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.services.events.internal.StackTrimmer;
@@ -98,12 +97,6 @@ public class OrchestratedInstrumentationListenerTest {
   }
 
   @Test
-  public void testBogusStarted() {
-    listener.testStarted(Description.createTestDescription("a.b", "initializationError"));
-    verifyNoMoreInteractions(testRunEventService);
-  }
-
-  @Test
   public void testFinished() throws TestEventClientException {
     listener.testFinished(jUnitDescription);
     ArgumentCaptor<TestRunEvent> argument = ArgumentCaptor.forClass(TestRunEvent.class);
@@ -114,12 +107,6 @@ public class OrchestratedInstrumentationListenerTest {
   }
 
   @Test
-  public void testBogusFinished() {
-    listener.testFinished(Description.createTestDescription("a.b", "initializationError"));
-    verifyNoMoreInteractions(testRunEventService);
-  }
-
-  @Test
   public void testFailure() throws TestEventClientException {
     listener.testFailure(jUnitFailure);
     ArgumentCaptor<TestRunEvent> argument = ArgumentCaptor.forClass(TestRunEvent.class);
@@ -127,15 +114,6 @@ public class OrchestratedInstrumentationListenerTest {
 
     TestFailureEvent event = (TestFailureEvent) argument.getValue();
     compareFailure(event, jUnitFailure);
-  }
-
-  @Test
-  public void testBogusFailure() {
-    listener.testFailure(
-        new Failure(
-            Description.createTestDescription("a.b", "initializationError"),
-            new Throwable("error")));
-    verifyNoMoreInteractions(testRunEventService);
   }
 
   @Test

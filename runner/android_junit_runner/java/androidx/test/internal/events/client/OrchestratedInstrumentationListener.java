@@ -100,16 +100,6 @@ public final class OrchestratedInstrumentationListener extends RunListener {
   @Override
   public void testStarted(Description description) {
     this.description = description; // Caches the test description in case of a crash
-    if (!JUnitValidator.validateDescription(description)) {
-      Log.w(
-          TAG,
-          "testStarted: JUnit reported "
-              + description.getClassName()
-              + "#"
-              + description.getMethodName()
-              + "; discarding as bogus.");
-      return;
-    }
     try {
       notificationService.send(new TestStartedEvent(getTestCaseFromDescription(description)));
     } catch (TestEventException e) {
@@ -120,16 +110,6 @@ public final class OrchestratedInstrumentationListener extends RunListener {
   /** {@inheritDoc} */
   @Override
   public void testFinished(Description description) {
-    if (!JUnitValidator.validateDescription(description)) {
-      Log.w(
-          TAG,
-          "testFinished: JUnit reported "
-              + description.getClassName()
-              + "#"
-              + description.getMethodName()
-              + "; discarding as bogus.");
-      return;
-    }
     try {
       notificationService.send(new TestFinishedEvent(getTestCaseFromDescription(description)));
     } catch (TestEventException e) {
@@ -146,19 +126,6 @@ public final class OrchestratedInstrumentationListener extends RunListener {
     // We'd like to make sure only one failure gets sent so that the isTestFailed variable is
     // checked and set without possibly racing between two thread calls.
     if (isTestFailed.compareAndSet(false, true)) {
-      Description description = failure.getDescription();
-      if (!JUnitValidator.validateDescription(description)) {
-        // The call stack from failure.getException() will be logged by the LogRunListener; look for
-        // the "TestRunner" tag in the logcat.
-        Log.w(
-            TAG,
-            "testFailure: JUnit reported "
-                + description.getClassName()
-                + "#"
-                + description.getMethodName()
-                + "; discarding as bogus.");
-        return;
-      }
       TestFailureEvent event;
       try {
         event =

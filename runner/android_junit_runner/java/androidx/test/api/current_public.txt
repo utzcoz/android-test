@@ -248,3 +248,11 @@ package androidx.test.runner.intercepting {
 
 }
 
+package androidx.test.runner.suites {
+
+  @org.junit.runner.RunWith(RunnerSuite.class) public final class AndroidClasspathSuite {
+    ctor public AndroidClasspathSuite();
+  }
+
+}
+

@@ -36,7 +36,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-/** Unit tests fpr {@link TestDiscovery}. */
+/** Unit tests fpor {@link TestDiscovery}. */
 @RunWith(AndroidJUnit4.class)
 public class TestDiscoveryTest {
   @Mock TestEventClientConnectListener mockConnectListener;
@@ -66,17 +66,25 @@ public class TestDiscoveryTest {
         is(getClass().getCanonicalName() + "#sampleTest"));
   }
 
+  /**
+   * Verify that initialiationErrors are treated as just another test to report
+   *
+   * @throws TestEventClientException
+   */
   @Test
-  public void addBogusTest() throws TestEventClientException {
+  public void addInitializationErrorTest() throws TestEventClientException {
     ArgumentCaptor<TestDiscoveryEvent> argument = ArgumentCaptor.forClass(TestDiscoveryEvent.class);
 
     TestDiscovery testDiscovery = new TestDiscovery(discoveryEventService);
     Description testDescription = Description.createTestDescription("a.b", "initializationError");
     testDiscovery.addTests(testDescription);
 
-    verify(discoveryEventService, times(2)).send(argument.capture());
+    verify(discoveryEventService, times(3)).send(argument.capture());
     assertThat(argument.getAllValues().get(0), instanceOf(TestDiscoveryStartedEvent.class));
-    assertThat(argument.getAllValues().get(1), instanceOf(TestDiscoveryFinishedEvent.class));
+    TestFoundEvent infoEvent = (TestFoundEvent) argument.getAllValues().get(1);
+    assertThat(argument.getAllValues().get(2), instanceOf(TestDiscoveryFinishedEvent.class));
     verifyNoMoreInteractions(discoveryEventService);
+
+    assertThat(infoEvent.testCase.getClassAndMethodName(), is("a.b#initializationError"));
   }
 }

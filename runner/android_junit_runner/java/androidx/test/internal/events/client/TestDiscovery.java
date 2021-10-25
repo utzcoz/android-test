@@ -58,16 +58,6 @@ public final class TestDiscovery {
       return;
     }
     if (description.isTest()) {
-      if (!JUnitValidator.validateDescription(description)) {
-        Log.w(
-            TAG,
-            "JUnit reported "
-                + description.getClassName()
-                + "#"
-                + description.getMethodName()
-                + "; discarding as bogus.");
-        return;
-      }
       try {
         testDiscoveryEventService.send(new TestFoundEvent(getTestCaseFromDescription(description)));
       } catch (TestEventException e) {
