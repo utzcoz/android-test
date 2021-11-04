@@ -36,7 +36,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-/** Unit tests fpr {@link TestDiscovery}. */
+/** Unit tests fpr {@link TestDiscoveryListener}. */
 @RunWith(AndroidJUnit4.class)
 public class TestDiscoveryTest {
   @Mock TestEventClientConnectListener mockConnectListener;
@@ -48,11 +48,11 @@ public class TestDiscoveryTest {
   }
 
   @Test
-  public void addTests() throws TestEventClientException {
-    TestDiscovery testDiscovery = new TestDiscovery(discoveryEventService);
+  public void testFinished() throws TestEventClientException {
+    TestDiscoveryListener testDiscoveryListener = new TestDiscoveryListener(discoveryEventService);
     Description testDescription = Description.createTestDescription(getClass(), "sampleTest");
 
-    testDiscovery.addTests(testDescription);
+    testDiscoveryListener.testFinished(testDescription);
 
     ArgumentCaptor<TestDiscoveryEvent> argument = ArgumentCaptor.forClass(TestDiscoveryEvent.class);
     verify(discoveryEventService, times(3)).send(argument.capture());
@@ -67,12 +67,12 @@ public class TestDiscoveryTest {
   }
 
   @Test
-  public void addBogusTest() throws TestEventClientException {
+  public void testFinished_initError() throws TestEventClientException {
     ArgumentCaptor<TestDiscoveryEvent> argument = ArgumentCaptor.forClass(TestDiscoveryEvent.class);
 
-    TestDiscovery testDiscovery = new TestDiscovery(discoveryEventService);
+    TestDiscoveryListener testDiscoveryListener = new TestDiscoveryListener(discoveryEventService);
     Description testDescription = Description.createTestDescription("a.b", "initializationError");
-    testDiscovery.addTests(testDescription);
+    testDiscoveryListener.testFinished(testDescription);
 
     verify(discoveryEventService, times(2)).send(argument.capture());
     assertThat(argument.getAllValues().get(0), instanceOf(TestDiscoveryStartedEvent.class));

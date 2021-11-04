@@ -62,8 +62,7 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    assertThat(client.isTestDiscoveryEnabled(), is(false));
-    assertThat(client.isTestRunEventsEnabled(), is(false));
+    assertThat(client.isOrchestrationServiceEnabled(), is(true));
   }
 
   @Test
@@ -74,8 +73,7 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    assertThat(client.isTestDiscoveryEnabled(), is(false));
-    assertThat(client.isTestRunEventsEnabled(), is(true));
+    assertThat(client.isOrchestrationServiceEnabled(), is(true));
   }
 
   @Test
@@ -87,8 +85,7 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    assertThat(client.isTestDiscoveryEnabled(), is(false));
-    assertThat(client.isTestRunEventsEnabled(), is(true));
+    assertThat(client.isOrchestrationServiceEnabled(), is(true));
   }
 
   @Test
@@ -100,8 +97,7 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    assertThat(client.isTestDiscoveryEnabled(), is(true));
-    assertThat(client.isTestRunEventsEnabled(), is(false));
+    assertThat(client.isOrchestrationServiceEnabled(), is(true));
   }
 
   @Test
@@ -129,7 +125,7 @@ public class TestEventClientTest {
   }
 
   @Test
-  public void addTests_listTestsArgFalse_doesNotThrow() {
+  public void addTests_listTestsArgFalse_doesNotThrow() throws Exception {
     Bundle bundle = new Bundle();
     bundle.putString(ARGUMENT_ORCHESTRATOR_SERVICE, "foo.OrchestratorService");
     bundle.putString(ARGUMENT_LIST_TESTS_FOR_ORCHESTRATOR, "false");
@@ -137,11 +133,13 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    client.addTests(Description.createTestDescription(getClass(), "sampleTest"));
+    client
+        .getRunListener()
+        .testFinished(Description.createTestDescription(getClass(), "sampleTest"));
   }
 
   @Test
-  public void addTests_listTestsArgTrue_doesNotThrow() {
+  public void addTests_listTestsArgTrue_doesNotThrow() throws Exception {
     Bundle bundle = new Bundle();
     bundle.putString(ARGUMENT_ORCHESTRATOR_SERVICE, "foo.OrchestratorService");
     bundle.putString(ARGUMENT_LIST_TESTS_FOR_ORCHESTRATOR, "true");
@@ -149,7 +147,9 @@ public class TestEventClientTest {
 
     TestEventClient client = TestEventClient.connect(context, listener, args);
 
-    client.addTests(Description.createTestDescription(getClass(), "sampleTest"));
+    client
+        .getRunListener()
+        .testFinished(Description.createTestDescription(getClass(), "sampleTest"));
   }
 
   private static TestEventClientArgs argsFromBundle(Bundle bundle) {
