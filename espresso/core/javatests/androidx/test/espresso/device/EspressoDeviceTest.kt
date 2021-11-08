@@ -77,7 +77,6 @@ class EspressoDeviceTest {
 
     onDevice().perform(setScreenOrientation(ScreenOrientation.PORTRAIT))
 
-    onView(withId(R.id.current_screen_orientation)).perform(click())
     onView(withId(R.id.current_screen_orientation)).check(matches(withText("portrait")))
   }
 
@@ -87,7 +86,6 @@ class EspressoDeviceTest {
 
     onDevice().perform(setScreenOrientation(ScreenOrientation.LANDSCAPE))
 
-    onView(withId(R.id.current_screen_orientation)).perform(click())
     onView(withId(R.id.current_screen_orientation)).check(matches(withText("landscape")))
   }
 }

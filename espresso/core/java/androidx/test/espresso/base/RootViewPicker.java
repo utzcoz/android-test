@@ -18,19 +18,26 @@ package androidx.test.espresso.base;
 
 import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 import android.app.Activity;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.view.View.OnLayoutChangeListener;
 import androidx.test.espresso.EspressoException;
+import androidx.test.espresso.IdlingRegistry;
 import androidx.test.espresso.NoActivityResumedException;
 import androidx.test.espresso.NoMatchingRootException;
 import androidx.test.espresso.Root;
 import androidx.test.espresso.UiController;
+import androidx.test.espresso.idling.CountingIdlingResource;
 import androidx.test.internal.platform.os.ControlledLooper;
 import androidx.test.internal.util.LogUtil;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.lifecycle.ActivityLifecycleCallback;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitor;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
 import androidx.test.runner.lifecycle.Stage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -88,7 +95,7 @@ public final class RootViewPicker implements Provider<View> {
     if (needsActivity.get()) {
       waitForAtLeastOneActivityToBeResumed();
     }
-
+    waitForAndHandleConfigurationChanges(uiController);
     return pickRootView();
   }
 
@@ -276,6 +283,84 @@ public final class RootViewPicker implements Provider<View> {
       NO_ROOTS_PRESENT,
       NO_ROOTS_PICKED,
       ROOTS_PICKED,
+    }
+  }
+
+  private void waitForAndHandleConfigurationChanges(UiController uiController) {
+    int applicationOrientation =
+        InstrumentationRegistry.getInstrumentation()
+            .getTargetContext()
+            .getResources()
+            .getConfiguration()
+            .orientation;
+    Collection<Activity> activities =
+        ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED);
+    if (activities.isEmpty()) {
+      if (Log.isLoggable(TAG, Log.DEBUG)) {
+        Log.d(
+            TAG,
+            "Could not check if configuration changes were in progress because the current activity"
+                + " could not be found.");
+      }
+      return;
+    }
+
+    Activity currentActivity = getOnlyElement(activities);
+    int activityOrientation = currentActivity.getResources().getConfiguration().orientation;
+
+    if (applicationOrientation != activityOrientation) {
+      CountingIdlingResource idlingResource =
+          new CountingIdlingResource("ConfigurationChangesIdlingResource");
+      IdlingRegistry.getInstance().register(idlingResource);
+      idlingResource.increment();
+
+      currentActivity
+          .getWindow()
+          .getDecorView()
+          .addOnLayoutChangeListener(
+              new OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(
+                    View v,
+                    int left,
+                    int top,
+                    int right,
+                    int bottom,
+                    int oldLeft,
+                    int oldTop,
+                    int oldRight,
+                    int oldBottom) {
+                  if (!idlingResource.isIdleNow()
+                      && applicationOrientation
+                          == currentActivity.getResources().getConfiguration().orientation) {
+                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                      Log.d(
+                          TAG, "Activity's orientation was set to the application's orientation.");
+                    }
+                    idlingResource.decrement();
+                    IdlingRegistry.getInstance().unregister(idlingResource);
+                    currentActivity.getWindow().getDecorView().removeOnLayoutChangeListener(this);
+                  }
+                }
+              });
+
+      ActivityLifecycleMonitorRegistry.getInstance()
+          .addLifecycleCallback(
+              new ActivityLifecycleCallback() {
+                @Override
+                public void onActivityLifecycleChanged(Activity activity, Stage stage) {
+                  if (activity.getLocalClassName().equals(currentActivity.getLocalClassName())
+                      && Stage.RESUMED == stage) {
+                    if (Log.isLoggable(TAG, Log.DEBUG)) {
+                      Log.d(TAG, "Activity was resumed after a configuration change.");
+                    }
+                    idlingResource.decrement();
+                    IdlingRegistry.getInstance().unregister(idlingResource);
+                    ActivityLifecycleMonitorRegistry.getInstance().removeLifecycleCallback(this);
+                  }
+                }
+              });
+      uiController.loopMainThreadUntilIdle();
     }
   }
 
